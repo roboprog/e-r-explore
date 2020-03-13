@@ -1,0 +1,7 @@
+{
+  "tables": [
+    {"name": "Moe"},
+    {"name": "Larry"},
+    {"name": "Curly"}
+  ]
+}

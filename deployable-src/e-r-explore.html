@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Entity Relationship Explorer</title>
+</head>
+<body>
+  <p>Please select a schema description data file</p>
+  <form>
+    <!--
+      the one and only event generator which drives this little utility:
+      selecting a file with this input fires off code to load the JSON,
+      and generate the rest of the page accordingly.
+    -->
+    <input
+        type="file"
+        id="file"
+        onchange="load_sel( this.files )"
+    >
+  </form>
+  <h1 id="fname"></h1>
+  <ul id="tnames"></ul>
+  <div id="tdetails"></div>
+  <script>
+
+    /** generate a new element, with text */
+    const gen_el_w_text = function ( type, text) {
+      var el = document.createElement( type )
+      el.textContent = text
+      return el
+    }
+
+    /** generate a new element, nested element(s) */
+    const gen_el_w_nest = function ( type, child_els ) {
+      var el = document.createElement( type )
+      if ( child_els.forEach ) {
+        child_els.forEach( function ( child ) {
+          el.appendChild( child )
+        } )
+      } else {
+        el.appendChild( child_els )
+      }
+      return el
+    }
+
+    /** map the input array and append the result to the given anchor */
+    const append_map = function ( mapper, anchor_el, in_objs ) {
+      in_objs.forEach( function ( obj) {
+        anchor_el.appendChild(
+          mapper( obj )
+        )
+      } )
+    }
+
+    /** generate an entry in the list of table names */
+    const gen_table_index = function ( table ) {
+      console.log( table )
+      var item = document.createElement( 'li' )
+      item.textContent = table.name
+      return item
+    }
+
+    /** generate an entry in the details of table names */
+    const gen_table_detail = function ( table ) {
+      console.log( table )
+      // TODO - outer div with a name anchor to link to
+      return gen_el_w_nest(
+        'table',
+        gen_el_w_nest(
+          'tbody',
+          gen_el_w_nest(
+            'tr',
+            gen_el_w_text(
+              'td',
+              table.name
+            )
+          )
+        )
+      )
+      // TODO - list references from, and to
+    }
+
+    /** interpret the schema description object */
+    const display_schema = function ( schema ) {
+      append_map(
+        gen_table_index,
+        document.getElementById( 'tnames' ),
+        schema.tables // TODO - sort tables (Ramda?)
+      )
+      append_map(
+        gen_table_detail,
+        document.getElementById( 'tdetails' ),
+        schema.tables
+      )
+      // TODO - check for top level related schemas with their own (related) tables
+    }
+
+    /** Load the selected file (first item in given list). */
+    const load_sel = function ( files ) {
+      try {
+        const sel_file = files[ 0 ]
+        console.log( sel_file )
+        document.getElementById(
+          'fname'
+        ).textContent = sel_file.name
+        sel_file.text().then( function ( text ) {
+          const schema = JSON.parse( text )
+          console.log( schema )
+          display_schema( schema )
+        } )
+      } catch ( e ) {
+        console.error( e )
+      }
+    }
+
+  </script>
+</body>
+</html>

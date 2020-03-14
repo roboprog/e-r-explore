@@ -1,7 +1,32 @@
 {
   "tables": [
-    {"name": "Moe"},
-    {"name": "Larry"},
-    {"name": "Curly"}
+    {
+      "name": "People",
+      "desc": "A list of people and some basic facts about them",
+      "key": "id"
+    },
+    {
+      "name": "RelTypes",
+      "desc": "Relationship types",
+      "key": "id"
+    },
+    {
+      "name": "Relationships",
+      "desc": "Relationship types and associations between people",
+      "fkeys": [
+        {
+          "to": "RelTypes",
+          "via": "reltype_id"
+        },
+        {
+          "to": "People",
+          "via": "from_person_id"
+        },
+        {
+          "to": "People",
+          "via": "to_person_id"
+        }
+      ]
+    }
   ]
 }

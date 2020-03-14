@@ -23,10 +23,34 @@
   <div id="tdetails"></div>
   <script>
 
-    /** generate a new element, with text */
-    const gen_el_w_text = function ( type, text) {
+    // @formatter:off
+    //
+    // If the setting above, AND, a corresponding preference / configuration are enabled,
+    // IntelliJ will try to "help" you format your code LESS (some of us detest its auto-formatting).
+    // see:  https://www.google.com/webhp?sourceid=chrome-instant&ion=1&espv=2&ie=UTF-8#q=intellij+disable+auto+format&*
+    // e.g. -
+    //      http://www.gamefromscratch.com/post/2015/02/01/Preventing-IntelliJ-code-auto-formatting-from-ruining-your-day.aspx
+    //      http://stackoverflow.com/questions/3375307/how-to-disable-code-formatting-for-some-part-of-the-code-using-comments
+
+    /** return anchor name based on table name */
+    const get_anchor = ( tname ) => (
+      `tb_${ tname }`
+    )
+
+    /** generate a new element, with optional text or attributes */
+    const gen_el_w_text = function ( type, text, attrs ) {
       var el = document.createElement( type )
       el.textContent = text
+      if ( attrs ) {
+        Object.getOwnPropertyNames(
+          attrs
+        ).forEach( function( attr ) {
+          el.setAttribute(
+            attr,
+            attrs[ attr ]
+          )
+        } )
+      } // else: no attributes to add
       return el
     }
 
@@ -55,9 +79,14 @@
     /** generate an entry in the list of table names */
     const gen_table_index = function ( table ) {
       console.log( table )
-      var item = document.createElement( 'li' )
-      item.textContent = table.name
-      return item
+      return gen_el_w_nest(
+        'li',
+        gen_el_w_text(
+          'a',
+          table.name,
+          { href: '#' + get_anchor( table.name ) }
+        )
+      )
     }
 
     /** generate an entry in the details of table names */
@@ -65,31 +94,45 @@
       console.log( table )
       // TODO - outer div with a name anchor to link to
       return gen_el_w_nest(
-        'table',
-        gen_el_w_nest(
-          'tbody',
+        'div',
+        [
+          gen_el_w_text(
+            'a',
+            null,
+            { name: get_anchor( table.name ) }
+          ),
           gen_el_w_nest(
-            'tr',
-            gen_el_w_text(
-              'td',
-              table.name
+            'table',
+            gen_el_w_nest(
+              'tbody',
+              gen_el_w_nest(
+                'tr',
+                gen_el_w_text(
+                  'td',
+                  table.name
+                )
+              )
             )
           )
-        )
+        ]
       )
       // TODO - list references from, and to
     }
 
     /** interpret the schema description object */
     const display_schema = function ( schema ) {
+      var tnames = document.getElementById( 'tnames' )
+      tnames.textContent = null
       append_map(
         gen_table_index,
-        document.getElementById( 'tnames' ),
+        tnames,
         schema.tables // TODO - sort tables (Ramda?)
       )
+      var tdetails = document.getElementById( 'tdetails' )
+      tdetails.textContent = null
       append_map(
         gen_table_detail,
-        document.getElementById( 'tdetails' ),
+        tdetails,
         schema.tables
       )
       // TODO - check for top level related schemas with their own (related) tables

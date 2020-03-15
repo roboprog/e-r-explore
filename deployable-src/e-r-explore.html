@@ -21,7 +21,14 @@
   <h1 id="fname"></h1>
   <ul id="tnames"></ul>
   <div id="tdetails"></div>
-  <script>
+  <script
+      src="https://cdn.jsdelivr.net/npm/ramda/dist/ramda.js"
+      crossorigin="anonymous"
+  >
+  </script>
+  <!-- TODO - lock down the Ramda version, then get updated checksum -->
+  <!-- TODO integrity="sha384-rKmeYxOQCAwkiEDMEDRGhK9EDXaEssbVFm7tXtZxMveWR8nYSjjsrevOsUZVpcPm" -->
+  <script defer>
 
     // @formatter:off
     //
@@ -32,15 +39,27 @@
     //      http://www.gamefromscratch.com/post/2015/02/01/Preventing-IntelliJ-code-auto-formatting-from-ruining-your-day.aspx
     //      http://stackoverflow.com/questions/3375307/how-to-disable-code-formatting-for-some-part-of-the-code-using-comments
 
+    /** defer an operation to allow the browser to respond to other events between work chunks */
+    const defer = function ( work ) {
+      setTimeout(
+        work,
+        0  // no real wait, just allow other events to process
+      )
+    }
+
     /** return anchor name based on table name */
     const get_anchor = ( tname ) => (
       `tb_${ tname }`
     )
 
-    /** generate a new element, with optional text or attributes */
-    const gen_el_w_text = function ( type, text, attrs ) {
-      var el = document.createElement( type )
+    /** set / clear text on an element */
+    const set_text = function ( el, text ) {
       el.textContent = text
+      return el
+    }
+
+    /** append any attributes to an element, pass through the element */
+    const set_attrs = function ( el, attrs ) {
       if ( attrs ) {
         Object.getOwnPropertyNames(
           attrs
@@ -54,9 +73,9 @@
       return el
     }
 
-    /** generate a new element, nested element(s) */
-    const gen_el_w_nest = function ( type, child_els ) {
-      var el = document.createElement( type )
+    /** append any nested element(s) to an element, pass through the element */
+    const set_nest = function ( el, child_els ) {
+      console.log( child_els )
       if ( child_els.forEach ) {
         child_els.forEach( function ( child ) {
           el.appendChild( child )
@@ -66,6 +85,77 @@
       }
       return el
     }
+
+    /** generate a new element, with optional text or attributes */
+    const gen_el_w_text = R.curry( ( type, text, attrs ) => (
+      set_text(
+        set_attrs(
+          document.createElement( type ),
+          attrs
+        ),
+        text
+      )
+    ) )
+
+    /** generate a new element, nested element(s) or attributes */
+    const gen_el_w_nest = R.curry( ( type, child_els, attrs ) => (
+      set_nest(
+        set_attrs(
+          document.createElement( type ),
+          attrs
+        ),
+        child_els
+      )
+    ) )
+
+    /** generate a list item with nested element(s) */
+    const m_div = gen_el_w_nest(
+      'div',
+      R.__,
+      null
+    )
+
+    // Note that the m_* convenience functions generate (HTML) markup.
+    // A word about R.curry / R.partial: it does partial function application via strict currying,
+    // so all arguments must be passed (no variadic function support) to call the underlying function.
+
+    /** generate a list item with nested element(s) */
+    const m_li = gen_el_w_nest(
+      'li',
+      R.__,
+      null
+    )
+
+    /** generate an anchor tag with optional text and attributes */
+    const m_a = gen_el_w_text( 'a' )
+
+    /** generate a table (with only a body, no header/footer) with nested element(s) */
+    const m_table = R.compose( // f * g -- f( g( x ) )
+      gen_el_w_nest(
+        'table',
+        R.__,
+        null
+      ),
+      gen_el_w_nest(
+        'tbody',
+        R.__,
+        null
+      )
+    )
+
+    /** generate a table row with nested element(s) */
+    const m_tr = gen_el_w_nest(
+      'tr',
+      R.__,
+      null
+    )
+
+    /** generate a table data cell with text */
+    const m_td = gen_el_w_text(
+      'td',
+      R.__,
+      null
+    )
 
     /** map the input array and append the result to the given anchor */
     const append_map = function ( mapper, anchor_el, in_objs ) {
@@ -79,10 +169,8 @@
     /** generate an entry in the list of table names */
     const gen_table_index = function ( table ) {
       console.log( table )
-      return gen_el_w_nest(
-        'li',
-        gen_el_w_text(
-          'a',
+      return m_li(
+        m_a(
           table.name,
           { href: '#' + get_anchor( table.name ) }
         )
@@ -92,26 +180,15 @@
     /** generate an entry in the details of table names */
     const gen_table_detail = function ( table ) {
       console.log( table )
-      // TODO - outer div with a name anchor to link to
-      return gen_el_w_nest(
-        'div',
+      return m_div(
         [
-          gen_el_w_text(
-            'a',
+          m_a(
             null,
             { name: get_anchor( table.name ) }
           ),
-          gen_el_w_nest(
-            'table',
-            gen_el_w_nest(
-              'tbody',
-              gen_el_w_nest(
-                'tr',
-                gen_el_w_text(
-                  'td',
-                  table.name
-                )
-              )
+          m_table(
+            m_tr(
+              m_td( table.name )
             )
           )
         ]
@@ -121,20 +198,27 @@
 
     /** interpret the schema description object */
     const display_schema = function ( schema ) {
-      var tnames = document.getElementById( 'tnames' )
-      tnames.textContent = null
-      append_map(
-        gen_table_index,
-        tnames,
-        schema.tables // TODO - sort tables (Ramda?)
-      )
-      var tdetails = document.getElementById( 'tdetails' )
-      tdetails.textContent = null
-      append_map(
-        gen_table_detail,
-        tdetails,
-        schema.tables
-      )
+      defer( function () {
+        var tnames = document.getElementById( 'tnames' )
+        tnames.textContent = null
+        append_map(
+          gen_table_index,
+          tnames,
+          R.sort(
+            R.comparator( ( l, r ) => ( l.name < r.name ) ),
+            schema.tables
+          )
+        )
+      } )
+      defer( function () {
+        var tdetails = document.getElementById( 'tdetails' )
+        tdetails.textContent = null
+        append_map(
+          gen_table_detail,
+          tdetails,
+          schema.tables
+        )
+      } )
       // TODO - check for top level related schemas with their own (related) tables
     }
 
@@ -150,7 +234,7 @@
           const schema = JSON.parse( text )
           console.log( schema )
           display_schema( schema )
-        } )
+        } )  // TODO - log any error
       } catch ( e ) {
         console.error( e )
       }

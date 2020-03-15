@@ -7,9 +7,26 @@
     table {
       margin: .5em;
       padding: .5em;
+      width: 90%;
     }
     tr {
       border: .25em solid black;
+      background-color: lightyellow;
+    }
+    td {
+      padding: .5em;
+    }
+    td.primary {
+      background-color: lightcyan;
+    }
+    td.unused {
+      background-color: lightgray;
+    }
+    td.reference {
+      background-color: lightseagreen;
+    }
+    td.referent {
+      background-color: lightcoral;
     }
   </style>
 </head>
@@ -162,12 +179,14 @@
 		null
 	  )
 
-	  /** generate a table data cell with text */
-	  const td = gen_el_w_text(
-		'td',
-		R.__,
-		null
-	  )
+	  /** generate a table heading cell with text and attributes */
+	  const th = gen_el_w_text( 'th' )
+
+	  /** generate a table data cell with text and attributes */
+	  const td = gen_el_w_text( 'td' )
+
+	  /** generate a table data cell with nested element(s) and attributes */
+	  const td_nest = gen_el_w_nest( 'td' )
 
       return {
         div,
@@ -175,7 +194,9 @@
         a,
         table,
         tr,
-        td
+        th,
+        td,
+        td_nest,
       }
     } )()
 
@@ -201,23 +222,85 @@
     }
 
     /** generate an entry in the details of table names */
-    const gen_table_detail = function ( table ) {
-      console.log( table )
+    const gen_table_detail = R.curry( function ( schema, table ) {
+      console.log( schema, table )
+
+      /** generate information about other tables which this table references */
+      const gen_refs = function () {
+        if ( ! table.fkeys ) {
+          return m.td(
+            '(no foreign keys)',
+            { class: 'unused' }
+          )
+        }
+
+        return m.td_nest(
+          m.table(
+            R.flatten( [
+              [
+                m.th(
+                  'Foreign Key',
+                  { width: '50%' }
+                ),
+                m.th(
+                  'Referenced Table',
+                  { width: '50%' }
+                ),
+              ],
+              R.map(
+                ( fkey ) => (
+                  m.tr( [
+                    m.td(
+                      fkey.via,
+                      { class: 'reference' }
+                    ),
+                    m.td_nest(
+                      m.a(
+                        fkey.to,
+                        { href: "#" + get_anchor( fkey.to ) }
+                      ),
+                      { class: 'referent' }
+                    )
+                    // TODO - 2nd level references
+                  ] )
+                ),
+                table.fkeys
+              )
+            ] )
+          ),
+          null  // no attributes here
+        )
+      }
+
       return m.div(
         [
           m.a(
             null,
             { name: get_anchor( table.name ) }
           ),
-          m.table(
-            m.tr(
-              m.td( table.name )
-            )
-          )
+          m.table( [
+            m.tr( [
+              m.th(
+                'Table',
+                { width: '30%'}
+              ),
+              m.th(
+                'References',
+                { width: '60%'}
+              ),
+            ] ),
+            m.tr( [
+              m.td(
+                table.name,
+                { class: 'primary' }
+              ),
+              gen_refs()
+            ] )
+          ] )
         ]
       )
-      // TODO - list references from, and to
-    }
+      // TODO - list references into, not just out of current table
+    } )
 
     /** force redraw of generated content */
     const redraw = function ( el ) {
@@ -252,7 +335,7 @@
         tdetails.textContent = null
         tdetails.appendChild(
           append_map(
-            gen_table_detail,
+            gen_table_detail( schema ),  // partially applied!
             document.createDocumentFragment(),
             schema.tables
           )

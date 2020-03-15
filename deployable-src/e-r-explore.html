@@ -28,6 +28,9 @@
     td.referent {
       background-color: lightcoral;
     }
+    td.unknown {
+      background-color: rgb(200, 150, 150);
+    }
   </style>
 </head>
 <body>
@@ -244,12 +247,42 @@
       console.log( schema, table )
 
       /** generate information about other tables which this table references */
-      const gen_refs = function () {
-        if ( ! table.fkeys ) {
+      const gen_refs = function ( depth, fkeys ) {
+        if ( depth > 2 ) {
+          return []  // === done ===
+        }
+
+        if ( ! fkeys ) {
           return m.td(
             '(no foreign keys)',
             { class: 'unused' }
+          )  // === done ===
+        }
+
+        /** generate the "referent" table cell for the referenced table */
+        const gen_referent = function( fkey ) {
+          const referent_table = R.find(
+            ( table ) => ( table.name === fkey.to ),
+            schema.tables
           )
+          if ( ! referent_table ) {
+            return m.td_nest(
+              [
+                m.p( fkey.to ),
+                m.p( '(not defined here)' ),
+              ],
+              { class: 'unknown' }
+            )
+          }
+
+          return m.td_nest(
+            m.a(
+              fkey.to,
+              { href: "#" + get_anchor( fkey.to ) }
+            ),
+            { class: 'referent' }
+          )
+          // TODO - 2nd level references
         }
 
         return m.td_nest(
@@ -272,17 +305,10 @@
                       fkey.via,
                       { class: 'reference' }
                     ),
-                    m.td_nest(
-                      m.a(
-                        fkey.to,
-                        { href: "#" + get_anchor( fkey.to ) }
-                      ),
-                      { class: 'referent' }
-                    )
-                    // TODO - 2nd level references
+                    gen_referent( fkey ),
                   ] )
                 ),
-                table.fkeys
+                fkeys
               )
             ] )
           ),
@@ -315,7 +341,10 @@
                 ],
                 { class: 'primary' }
               ),
-              gen_refs()
+              gen_refs(
+                1,
+                table.fkeys
+              )
             ] )
           ] )
         ]

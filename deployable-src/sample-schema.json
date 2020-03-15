@@ -3,7 +3,13 @@
     {
       "name": "People",
       "desc": "A list of people and some basic facts about them",
-      "key": "id"
+      "key": "id",
+      "fkeys": [
+        {
+          "to": "ExternalUndefinedStuffs",
+          "via": "some_id"
+        }
+      ]
     },
     {
       "name": "RelTypes",

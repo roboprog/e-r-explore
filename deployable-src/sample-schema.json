@@ -8,6 +8,10 @@
         {
           "to": "ExternalUndefinedStuffs",
           "via": "some_id"
+        },
+        {
+          "to": "ChildTable",
+          "via": "child_id"
         }
       ]
     },
@@ -33,6 +37,20 @@
           "via": "to_person_id"
         }
       ]
+    },
+    {
+      "name": "ChildTable",
+      "desc": "(Fodder) Referenced by People, itself referencing another table",
+      "fkeys": [
+        {
+          "to": "GrandChildTable",
+          "via": "grandchild_id"
+        }
+      ]
+    },
+    {
+      "name": "GrandChildTable",
+      "desc": "(Fodder) Referenced by ChildTable"
     }
   ]
 }

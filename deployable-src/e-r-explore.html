@@ -7,7 +7,7 @@
     table {
       margin: .5em;
       padding: .5em;
-      width: 90%;
+      width: 98%;
     }
     tr {
       border: .25em solid black;
@@ -83,6 +83,7 @@
       `tb_${ tname }`
     )
 
+    // TODO - rework this using Vue.js instead?
     /** HTML markup utility functions */
     const m = ( function () {
 
@@ -259,6 +260,28 @@
           )  // === done ===
         }
 
+        /** generate references table headings */
+        const gen_ref_hdgs = () => (
+          m.tr( R.flatten( [
+            m.th(
+              'Foreign Key',
+              { width: '30%' }
+            ),
+            m.th(
+              'Referenced Table',
+              { width: '30%' }
+            ),
+            (
+              ( depth === 1 ) ?
+                m.th(
+                  'Second Level References',
+                  { width: '30%' }
+                ) :
+                []
+            )
+          ] ) )
+        )
+
         /** generate the "referent" table cell for the referenced table */
         const gen_referent = function( fkey ) {
           const referent_table = R.find(
@@ -275,38 +298,36 @@
             )
           }
 
-          return m.td_nest(
-            m.a(
-              fkey.to,
-              { href: "#" + get_anchor( fkey.to ) }
+          return [
+            m.td_nest(
+              m.a(
+                fkey.to,
+                { href: "#" + get_anchor( fkey.to ) }
+              ),
+              { class: 'referent' }
             ),
-            { class: 'referent' }
-          )
-          // TODO - 2nd level references
+            gen_refs(
+              depth + 1,
+              referent_table.fkeys
+            )
+          ]
         }
 
         return m.td_nest(
           m.table(
             R.flatten( [
-              [
-                m.th(
-                  'Foreign Key',
-                  { width: '50%' }
-                ),
-                m.th(
-                  'Referenced Table',
-                  { width: '50%' }
-                ),
-              ],
+              gen_ref_hdgs(),
               R.map(
                 ( fkey ) => (
-                  m.tr( [
-                    m.td(
-                      fkey.via,
-                      { class: 'reference' }
-                    ),
-                    gen_referent( fkey ),
-                  ] )
+                  m.tr(
+                    R.flatten( [
+                      m.td(
+                        fkey.via,
+                        { class: 'reference' }
+                      ),
+                      gen_referent( fkey ),
+                    ] )
+                  )
                 ),
                 fkeys
               )

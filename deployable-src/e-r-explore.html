@@ -45,7 +45,9 @@
     >
   </form>
   <h1 id="fname"></h1>
+  <h1>Table Names</h1>
   <ul id="tnames"></ul>
+  <h1>Table Details</h1>
   <div id="tdetails"></div>
   <script
       src="https://cdn.jsdelivr.net/npm/ramda/dist/ramda.js"
@@ -155,7 +157,21 @@
 		null
 	  )
 
-	  /** generate an anchor tag with optional text and attributes */
+      /** generate a paragraph, with text (of course) */
+      const p = gen_el_w_text(
+        'p',
+        R.__,
+        null
+      )
+
+      /** generate a second level heading, with text (of course) */
+      const h2 = gen_el_w_text(
+        'h2',
+        R.__,
+        null
+      )
+
+      /** generate an anchor tag with optional text and attributes */
 	  const a = gen_el_w_text( 'a' )
 
 	  /** generate a table (with only a body, no header/footer) with nested element(s) */
@@ -191,6 +207,8 @@
       return {
         div,
         li,
+        p,
+        h2,
         a,
         table,
         tr,
@@ -290,8 +308,11 @@
               ),
             ] ),
             m.tr( [
-              m.td(
-                table.name,
+              m.td_nest(
+                [
+                  m.h2( table.name ),
+                  m.p( table.desc ),
+                ],
                 { class: 'primary' }
               ),
               gen_refs()

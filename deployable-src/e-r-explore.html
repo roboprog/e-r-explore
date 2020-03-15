@@ -3,6 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Entity Relationship Explorer</title>
+  <style>
+    table {
+      margin: .5em;
+      padding: .5em;
+    }
+    tr {
+      border: .25em solid black;
+    }
+  </style>
 </head>
 <body>
   <p>Please select a schema description data file</p>
@@ -52,125 +61,139 @@
       `tb_${ tname }`
     )
 
-    /** set / clear text on an element */
-    const set_text = function ( el, text ) {
-      el.textContent = text
-      return el
-    }
+    /** HTML markup utility functions */
+    const m = ( function () {
 
-    /** append any attributes to an element, pass through the element */
-    const set_attrs = function ( el, attrs ) {
-      if ( attrs ) {
-        Object.getOwnPropertyNames(
-          attrs
-        ).forEach( function( attr ) {
-          el.setAttribute(
-            attr,
-            attrs[ attr ]
-          )
-        } )
-      } // else: no attributes to add
-      return el
-    }
+	  /** set / clear text on an element */
+	  const set_text = function ( el, text ) {
+		el.textContent = text
+		return el
+	  }
 
-    /** append any nested element(s) to an element, pass through the element */
-    const set_nest = function ( el, child_els ) {
-      console.log( child_els )
-      if ( child_els.forEach ) {
-        child_els.forEach( function ( child ) {
-          el.appendChild( child )
-        } )
-      } else {
-        el.appendChild( child_els )
+	  /** append any attributes to an element, pass through the element */
+	  const set_attrs = function ( el, attrs ) {
+		if ( attrs ) {
+		  Object.getOwnPropertyNames(
+			attrs
+		  ).forEach( function( attr ) {
+			el.setAttribute(
+			  attr,
+			  attrs[ attr ]
+			)
+		  } )
+		} // else: no attributes to add
+		return el
+	  }
+
+	  /** append any nested element(s) to an element, pass through the element */
+	  const set_nest = function ( el, child_els ) {
+		console.log( child_els )
+		if ( child_els.forEach ) {
+		  child_els.forEach( function ( child ) {
+			el.appendChild( child )
+		  } )
+		} else {
+		  el.appendChild( child_els )
+		}
+		return el
+	  }
+
+	  /** generate a new element, with optional text or attributes */
+	  const gen_el_w_text = R.curry( ( type, text, attrs ) => (
+		set_text(
+		  set_attrs(
+			document.createElement( type ),
+			attrs
+		  ),
+		  text
+		)
+	  ) )
+
+	  /** generate a new element, nested element(s) or attributes */
+	  const gen_el_w_nest = R.curry( ( type, child_els, attrs ) => (
+		set_nest(
+		  set_attrs(
+			document.createElement( type ),
+			attrs
+		  ),
+		  child_els
+		)
+	  ) )
+
+	  /** generate a list item with nested element(s) */
+	  const div = gen_el_w_nest(
+		'div',
+		R.__,
+		null
+	  )
+
+	  // Note that the m_* convenience functions generate (HTML) markup.
+	  // A word about R.curry / R.partial: it does partial function application via strict currying,
+	  // so all arguments must be passed (no variadic function support) to call the underlying function.
+
+	  /** generate a list item with nested element(s) */
+	  const li = gen_el_w_nest(
+		'li',
+		R.__,
+		null
+	  )
+
+	  /** generate an anchor tag with optional text and attributes */
+	  const a = gen_el_w_text( 'a' )
+
+	  /** generate a table (with only a body, no header/footer) with nested element(s) */
+	  const table = R.compose( // f * g -- f( g( x ) )
+		gen_el_w_nest(
+		  'table',
+		  R.__,
+		  null
+		),
+		gen_el_w_nest(
+		  'tbody',
+		  R.__,
+		  null
+		)
+	  )
+
+	  /** generate a table row with nested element(s) */
+	  const tr = gen_el_w_nest(
+		'tr',
+		R.__,
+		null
+	  )
+
+	  /** generate a table data cell with text */
+	  const td = gen_el_w_text(
+		'td',
+		R.__,
+		null
+	  )
+
+      return {
+        div,
+        li,
+        a,
+        table,
+        tr,
+        td
       }
-      return el
-    }
+    } )()
 
-    /** generate a new element, with optional text or attributes */
-    const gen_el_w_text = R.curry( ( type, text, attrs ) => (
-      set_text(
-        set_attrs(
-          document.createElement( type ),
-          attrs
-        ),
-        text
-      )
-    ) )
-
-    /** generate a new element, nested element(s) or attributes */
-    const gen_el_w_nest = R.curry( ( type, child_els, attrs ) => (
-      set_nest(
-        set_attrs(
-          document.createElement( type ),
-          attrs
-        ),
-        child_els
-      )
-    ) )
-
-    /** generate a list item with nested element(s) */
-    const m_div = gen_el_w_nest(
-      'div',
-      R.__,
-      null
-    )
-
-    // Note that the m_* convenience functions generate (HTML) markup.
-    // A word about R.curry / R.partial: it does partial function application via strict currying,
-    // so all arguments must be passed (no variadic function support) to call the underlying function.
-
-    /** generate a list item with nested element(s) */
-    const m_li = gen_el_w_nest(
-      'li',
-      R.__,
-      null
-    )
-
-    /** generate an anchor tag with optional text and attributes */
-    const m_a = gen_el_w_text( 'a' )
-
-    /** generate a table (with only a body, no header/footer) with nested element(s) */
-    const m_table = R.compose( // f * g -- f( g( x ) )
-      gen_el_w_nest(
-        'table',
-        R.__,
-        null
-      ),
-      gen_el_w_nest(
-        'tbody',
-        R.__,
-        null
-      )
-    )
-
-    /** generate a table row with nested element(s) */
-    const m_tr = gen_el_w_nest(
-      'tr',
-      R.__,
-      null
-    )
-
-    /** generate a table data cell with text */
-    const m_td = gen_el_w_text(
-      'td',
-      R.__,
-      null
-    )
-
-    /** map the input array and append the result to the given anchor */
+    /** map the input array and append the result to the given (passed through) anchor */
     const append_map = function ( mapper, anchor_el, in_objs ) {
       in_objs.forEach( function ( obj) {
         anchor_el.appendChild(
           mapper( obj )
         )
       } )
+      return anchor_el
     }
 
     /** generate an entry in the list of table names */
     const gen_table_index = function ( table ) {
       console.log( table )
-      return m_li(
-        m_a(
+      return m.li(
+        m.a(
           table.name,
           { href: '#' + get_anchor( table.name ) }
         )
@@ -180,15 +203,15 @@
     /** generate an entry in the details of table names */
     const gen_table_detail = function ( table ) {
       console.log( table )
-      return m_div(
+      return m.div(
         [
-          m_a(
+          m.a(
             null,
             { name: get_anchor( table.name ) }
           ),
-          m_table(
-            m_tr(
-              m_td( table.name )
+          m.table(
+            m.tr(
+              m.td( table.name )
             )
           )
         ]
@@ -196,28 +219,45 @@
       // TODO - list references from, and to
     }
 
+    /** force redraw of generated content */
+    const redraw = function ( el ) {
+      defer( function() {
+        // per recipe from https://martinwolf.org/before-2018/blog/2014/06/force-repaint-of-an-element-with-javascript/
+        el.style.display = 'none'
+        console.log( 'Ignore, accessed for side effect: ' + el.offsetHeight )
+        el.style.display = 'block'
+      } )
+      return el
+    }
+
     /** interpret the schema description object */
     const display_schema = function ( schema ) {
       defer( function () {
         var tnames = document.getElementById( 'tnames' )
         tnames.textContent = null
-        append_map(
-          gen_table_index,
-          tnames,
-          R.sort(
-            R.comparator( ( l, r ) => ( l.name < r.name ) ),
-            schema.tables
+        tnames.appendChild(
+          append_map(
+            gen_table_index,
+            document.createDocumentFragment(),
+            R.sort(
+              R.comparator( ( l, r ) => ( l.name < r.name ) ),
+              schema.tables
+            )
           )
         )
+        redraw( tnames )
       } )
       defer( function () {
         var tdetails = document.getElementById( 'tdetails' )
         tdetails.textContent = null
-        append_map(
-          gen_table_detail,
-          tdetails,
-          schema.tables
+        tdetails.appendChild(
+          append_map(
+            gen_table_detail,
+            document.createDocumentFragment(),
+            schema.tables
+          )
         )
+        redraw( tdetails )
       } )
       // TODO - check for top level related schemas with their own (related) tables
     }

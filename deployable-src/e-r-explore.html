@@ -22,6 +22,9 @@
     td.unused {
       background-color: lightgray;
     }
+    td.referrer {
+      background-color: lightsteelblue;
+    }
     td.reference {
       background-color: lightseagreen;
     }
@@ -247,13 +250,61 @@
     const gen_table_detail = R.curry( function ( schema, table ) {
       console.log( schema, table )
 
+      /**
+       * Generate information about other tables which have foreign keys
+       * referencing the current main/"focused" table
+       */
+      const gen_referrers = function () {
+
+        /** true if a foreign key description is a reference to the current focused table */
+
+        /** list of foreign keys to the current focused table */
+        const refer_fkeys = R.filter(
+          ( fkey ) => ( fkey.to === table.name ),
+          R.flatten(
+            R.map(
+              ( table ) => ( table.fkeys ),
+              schema.tables
+            ),
+          )
+        )
+        if ( ! refer_fkeys.length ) {
+          return m.td(
+            '(No referring tables)',
+            { class: 'unused' }
+          )  // === done ===
+        }
+
+        return m.td_nest(
+          R.map(
+            ( fkey ) => (
+              m.tr( [
+                m.td_nest(
+                  m.a(
+                    fkey.from,
+                    { href: "#" + get_anchor( fkey.from ) }
+                  ),
+                  { class: 'referrer' }
+                ),
+                m.td(
+                  fkey.via,
+                  { class: 'reference' }
+                ),
+              ] )
+            ),
+            refer_fkeys
+          ),
+          {}
+        )
+      }
+
       /** generate information about other tables which this table references */
       const gen_refs = function ( depth, fkeys ) {
         if ( depth > 2 ) {
           return []  // === done ===
         }
 
-        if ( ! fkeys ) {
+        if ( ! fkeys.length ) {
           return m.td(
             '(no foreign keys)',
             { class: 'unused' }
@@ -346,15 +397,20 @@
           m.table( [
             m.tr( [
               m.th(
+                'Referring Table(s)',
+                { width: '25%'}
+              ),
+              m.th(
                 'Table',
-                { width: '30%'}
+                { width: '25%'}
               ),
               m.th(
                 'References',
-                { width: '60%'}
+                { width: '50%'}
               ),
             ] ),
             m.tr( [
+              gen_referrers(),
               m.td_nest(
                 [
                   m.h2( table.name ),
@@ -427,6 +483,30 @@
         sel_file.text().then( function ( text ) {
           const schema = JSON.parse( text )
           console.log( schema )
+
+          // decorate (mutate, alas) the table list with padded foreign key info
+          // TODO - rework this so it maps a copy
+          schema.tables = R.map(
+            function ( table ) {
+              table.fkeys = R.map(
+                function ( fkey ) {
+                  fkey.from = table.name
+                  return fkey
+                },
+                (
+                  table.fkeys ||
+                  []
+                )
+              )
+              return table
+            },
+            (
+              schema.tables ||
+              []
+            )
+          )
+          console.log( schema )
+
           display_schema( schema )
         } )  // TODO - log any error
       } catch ( e ) {
